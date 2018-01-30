@@ -6,3 +6,4 @@ argparse>=1.2.1
 futures>=2.1.6
 six>=1.7.3
 psutil>=2.1.1
+deepwalk>=1.0.0
