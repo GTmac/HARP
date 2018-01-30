@@ -26,7 +26,7 @@ Then, install HARP and the other requirements:
 # Usage
 To run HARP on the *CiteSeer* dataset using *LINE* as the underlying network embedding model, run the following command:
 
-``python src/harp.py --input example_graphs/citeseer/citeseer.mat --model line --output citeseer.npy``
+``python src/harp.py --input example_graphs/citeseer/citeseer.mat --model line --output citeseer.npy --sfdp-path bin/sfdp_linux``
 
 Parameters available:
 
@@ -63,6 +63,10 @@ Note that we assume the nodes in your input file are indexed **from 0 to N - 1**
 **--model** *model_name*
 The underlying network embeddings model to use. Could be ``deepwalk``, ``line`` or ``node2vec``.
 Note that ``node2vec`` uses the default parameters, which is p=1.0 and q=1.0.
+
+**--sfdp-path** *sfdp_path*
+Path to the binary file of SFDP, which is the module we used for graph coarsening.
+You can set it to either ``sfdp_linux`` or ``sfdp_osx`` depending on your operating system.
 
 **More options:** The full list of command line options is available with ``python src/harp.py --help``.
 
