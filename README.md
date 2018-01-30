@@ -60,6 +60,12 @@ you can also specify it with ``--matfile-variable-name``.
 The output representations in Numpy ``.npy`` format.
 Note that we assume the nodes in your input file are indexed **from 0 to N - 1**.
 
+**--model** *model_name*
+The underlying network embeddings model to use. Could be ``deepwalk``, ``line`` or ``node2vec``.
+Note that ``node2vec`` uses the default parameters, which is p=1.0 and q=1.0.
+
+**More options:** The full list of command line options is available with ``python src/harp.py --help``.
+
 # Evaluation
 To evaluate the embeddings on a multi-label classification task, run the following command:
 
