@@ -60,6 +60,14 @@ you can also specify it with ``--matfile-variable-name``.
 The output representations in Numpy ``.npy`` format.
 Note that we assume the nodes in your input file are indexed **from 0 to N - 1**.
 
+# Evaluation
+To evaluate the embeddings on a multi-label classification task, run the following command:
+
+``python src/scoring.py -e citeseer.npy -i example_graphs/citeseer/citeseer.mat -t 1 2 3 4 5 6 7 8 9``
+
+Where ``-e`` specifies the embeddings file, ``-i`` specifies the ``.mat`` file containing node labels,
+and ``-t`` specifies the list of training example ratios to use.
+
 # Note
 
 SFDP is a library for multi-level graph drawing, which is a part of [GraphViz](http://www.graphviz.org).
@@ -68,13 +76,6 @@ Note that SFDP is included as a binary file under ``/bin``;
 please choose the proper binary file according to your operation system.
 Currently we have the binary files under OSX and Linux.
 If you need to run HARP on a different platform, please let me know.
-
-# Evaluation
-To evaluate the embeddings on a multi-label classification task, run the following command:
-
-``python src/scoring.py -e citeseer.npy -i example_graphs/citeseer/citeseer.mat -t 1 2 3 4 5 6 7 8 9``
-Where ``-e`` specifies the embeddings file, ``-i`` specifies the ``.mat`` file containing node labels,
-and ``-t`` specifies the list of training example ratios to use.
 
 # Citation
 If you find HARP userful in your research, please cite our paper:
