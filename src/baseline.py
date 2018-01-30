@@ -5,7 +5,6 @@ import numpy as np
 def skipgram_baseline(graph, **kwargs):
     scale = kwargs.get('scale', -1)
     representation_size = kwargs.get('representation_size', 128)
-    print ('!!', kwargs)
 
     if scale == 1:
         edges, weights = graph.get_edges()
