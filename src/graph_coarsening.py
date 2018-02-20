@@ -250,7 +250,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
     print (kwargs)
     if graph.is_connected():
         print ('Connected graph.')
-        subgraphs, reversed_mappings = [graph], [{node: node for node in graph.nodes()}]
+        subgraphs, reversed_mappings = [graph], [{i: node for (i, node) in zip(range(len(graph)), graph.nodes())}]
     else:
         subgraphs, reversed_mappings = graph.get_merged_connected_components()
     count = 0
