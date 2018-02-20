@@ -59,8 +59,7 @@ class DoubleWeightedDiGraph(WeightedDiGraph):
 
     # graph coarsening need to be done on each connected component
     def get_merged_connected_components(self):
-        disconnected_component, connected_components, 
-        _mappings = [], [], []
+        disconnected_component, connected_components, reversed_mappings = [], [], []
         self.visited = {node: False for node in self.nodes()}
         graph_size_threshold = 100
 
