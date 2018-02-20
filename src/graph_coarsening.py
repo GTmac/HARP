@@ -59,7 +59,8 @@ class DoubleWeightedDiGraph(WeightedDiGraph):
 
     # graph coarsening need to be done on each connected component
     def get_merged_connected_components(self):
-        disconnected_component, connected_components, reversed_mappings = [], [], []
+        disconnected_component, connected_components, 
+        _mappings = [], [], []
         self.visited = {node: False for node in self.nodes()}
         graph_size_threshold = 100
 
@@ -71,13 +72,13 @@ class DoubleWeightedDiGraph(WeightedDiGraph):
                     self.cur_component = sorted(self.cur_component)
                     index_mapping = {self.cur_component[i]: i for i in range(len(self.cur_component)) }
                     connected_components.append(self.subgraph(self.cur_component, index_mapping=index_mapping))
-                    reversed_mappings.append({self.cur_component[i]:i for i in range(len(self.cur_component)) })
+                    reversed_mappings.append({i:self.cur_component[i] for i in range(len(self.cur_component)) })
                 else:
                     disconnected_component.extend(self.cur_component)
 
         if len(disconnected_component) > 0:
             disconnected_component = sorted(disconnected_component)
-            reversed_mappings.append({disconnected_component[i]:i for i in range(len(disconnected_component)) })
+            reversed_mappings.append({i:disconnected_component[i] for i in range(len(disconnected_component)) })
             index_mapping = {disconnected_component[i]: i for i in range(len(disconnected_component)) }
             connected_components.append(self.subgraph(disconnected_component, index_mapping=index_mapping) )
         return connected_components, reversed_mappings
@@ -250,7 +251,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
     print (kwargs)
     if graph.is_connected():
         print ('Connected graph.')
-        subgraphs, reversed_mappings = [graph], [{node: i for (node, i) in zip(graph.nodes(), range(len(graph)))}]
+        subgraphs, reversed_mappings = [graph], [{i: node for node in zip(range(len(graph)), graph.nodes())}]
     else:
         subgraphs, reversed_mappings = graph.get_merged_connected_components()
     count = 0
