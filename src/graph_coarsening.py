@@ -71,13 +71,13 @@ class DoubleWeightedDiGraph(WeightedDiGraph):
                     self.cur_component = sorted(self.cur_component)
                     index_mapping = {self.cur_component[i]: i for i in range(len(self.cur_component)) }
                     connected_components.append(self.subgraph(self.cur_component, index_mapping=index_mapping))
-                    reversed_mappings.append({i: self.cur_component[i] for i in range(len(self.cur_component)) })
+                    reversed_mappings.append({self.cur_component[i]:i for i in range(len(self.cur_component)) })
                 else:
                     disconnected_component.extend(self.cur_component)
 
         if len(disconnected_component) > 0:
             disconnected_component = sorted(disconnected_component)
-            reversed_mappings.append({i: disconnected_component[i] for i in range(len(disconnected_component)) })
+            reversed_mappings.append({disconnected_component[i]:i for i in range(len(disconnected_component)) })
             index_mapping = {disconnected_component[i]: i for i in range(len(disconnected_component)) }
             connected_components.append(self.subgraph(disconnected_component, index_mapping=index_mapping) )
         return connected_components, reversed_mappings
@@ -250,7 +250,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
     print (kwargs)
     if graph.is_connected():
         print ('Connected graph.')
-        subgraphs, reversed_mappings = [graph], [{node: node for node in graph.nodes()}]
+        subgraphs, reversed_mappings = [graph], [{node: i for (node, i) in zip(graph.nodes(), range(len(graph)))}]
     else:
         subgraphs, reversed_mappings = graph.get_merged_connected_components()
     count = 0
