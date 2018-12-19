@@ -66,7 +66,7 @@ Note that ``node2vec`` uses the default parameters, which is p=1.0 and q=1.0.
 
 **--sfdp-path** *sfdp_path*
 Path to the binary file of SFDP, which is the module we used for graph coarsening.
-You can set it to either ``sfdp_linux`` or ``sfdp_osx`` depending on your operating system.
+You can set it to ``sfdp_linux``, ``sfdp_osx`` or ``sfdp_windows.exe`` depending on your operating system.
 
 **More options:** The full list of command line options is available with ``python src/harp.py --help``.
 
@@ -84,11 +84,10 @@ SFDP is a library for multi-level graph drawing, which is a part of [GraphViz](h
 We use SFDP for graph coarsening in this implementation.
 Note that SFDP is included as a binary file under ``/bin``;
 please choose the proper binary file according to your operation system.
-Currently we have the binary files under OSX and Linux.
-If you need to run HARP on a different platform, please let me know.
+Currently we have the binary files under OSX, Linux and Windows.
 
 # Citation
-If you find HARP userful in your research, please cite our paper:
+If you find HARP useful in your research, please cite our paper:
 
 	@inproceedings{harp,
 		title={HARP: Hierarchical Representation Learning for Networks},
