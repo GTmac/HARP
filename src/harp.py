@@ -69,7 +69,7 @@ def main():
     elif args.model == 'line':
         embeddings = graph_coarsening.skipgram_coarsening_disconnected(G,scale=1, iter_count=50,
                 sfdp_path=args.sfdp_path,
-                representation_size=64,window_size=1,
+                representation_size=args.representation_size,window_size=1,
                 lr_scheme='default',alpha=0.025,min_alpha=0.001,sg=1,hs=0,sample=0.001)
 
     if args.output.endswith('.mat'):
