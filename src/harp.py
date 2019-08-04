@@ -7,7 +7,7 @@ import numpy as np
 
 from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 from magicgraph import WeightedDiGraph, WeightedNode
-from scipy.io import mmread, mmwrite, loadmat
+from scipy.io import mmread, mmwrite, loadmat, savemat
 
 import graph_coarsening
 
@@ -71,7 +71,11 @@ def main():
                 sfdp_path=args.sfdp_path,
                 representation_size=64,window_size=1,
                 lr_scheme='default',alpha=0.025,min_alpha=0.001,sg=1,hs=0,sample=0.001)
-    np.save(args.output, embeddings)
+
+    if args.output.endswith('.mat'):
+        savemat(args.output, mdict={'embs': embeddings})
+    else:
+        np.save(args.output, embeddings)
 
 if __name__ == '__main__':
     sys.exit(main())

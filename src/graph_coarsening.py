@@ -328,8 +328,8 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
                                         sg=1,
                                         hs=0)
 
-        for ind, vec in enumerate(gc_model[-1].syn0):
-            real_ind = reversed_mapping[int(gc_model[-1].index2word[ind])]
+        for ind, vec in enumerate(gc_model[-1].wv.syn0):
+            real_ind = reversed_mapping[int(gc_model[-1].wv.index2word[ind])]
             embeddings[real_ind] = vec
     return embeddings
 
@@ -391,10 +391,10 @@ def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, **kwargs):
             model = skipgram.Word2Vec_hs_loss(None, sg=kwargs['sg'], size=kwargs['representation_size'], iter=kwargs['iter'][level], window=kwargs['window_size'], sample=sample, alpha=alpha_list[level], min_alpha=min_alpha_list[level])
 
             # copy vocab / index2word from the coarser graph
-            model.vocab = copy.deepcopy(models[-1].vocab)
-            model.index2word = copy.deepcopy(models[-1].index2word)
-            model.syn0 = copy.deepcopy(models[-1].syn0)
-            model.syn0.resize(recursive_graphs[level].number_of_nodes(), kwargs['representation_size'])
+            model.wv.vocab = copy.deepcopy(models[-1].wv.vocab)
+            model.wv.index2word = copy.deepcopy(models[-1].wv.index2word)
+            model.wv.syn0 = copy.deepcopy(models[-1].wv.syn0)
+            model.wv.syn0.resize(recursive_graphs[level].number_of_nodes(), kwargs['representation_size'])
             model.syn0norm = None
             model.corpus_count = len(edges)
 
@@ -414,22 +414,22 @@ def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, **kwargs):
                     node_pool = [node, merged_node]
                 prev_node = node
 
-            cur_index = len(models[-1].vocab)
+            cur_index = len(models[-1].wv.vocab)
             for node, merged_node in changed_merged_nodes:
                 if node == merged_node:
                     continue
                 str_node, str_merged_node = str(node), str(merged_node)
-                word_index = model.vocab[str_merged_node].index
-                init_vec = model.syn0[word_index]
+                word_index = model.wv.vocab[str_merged_node].index
+                init_vec = model.wv.syn0[word_index]
                 model.add_word(str_node, str_merged_node, init_vec, cur_index)
                 cur_index += 1
                 model.add_word(str_merged_node, str_merged_node, init_vec, cur_index)
 
-            model.syn1 = np.zeros((len(model.vocab), model.layer1_size), dtype=np.float32)
+            model.syn1 = np.zeros((len(model.wv.vocab), model.layer1_size), dtype=np.float32)
             for i in range(len(models[-1].syn1)):
                 model.syn1[i] = models[-1].syn1[i]
-            model.syn0_lockf = np.ones(len(model.vocab), dtype=np.float32)
-            model.train(edges)
+            model.syn0_lockf = np.ones(len(model.wv.vocab), dtype=np.float32)
+            model.train(edges, total_examples=model.corpus_count, epochs=model.iter)
 
         models.append(model)
 
@@ -479,27 +479,27 @@ def skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, **kwargs):
         else:
             model = Word2Vec(None, size=kwargs['representation_size'], window=kwargs['window_size'], min_count=0, sample=sample, sg=1, hs=0, iter=kwargs['iter'][level], workers=20)
             model.build_vocab(edges)
-            model.reset_weights()
+            #model.reset_weights()  # Does not present in the latest gensim and there is no sense to reset weight in the non-trained model
 
             # init model weights with the previous one
-            prev_syn0 = {models[-1].index2word[ind]: vec for ind, vec in enumerate(models[-1].syn0)}
-            prev_syn1neg = {models[-1].index2word[ind]: vec for ind, vec in enumerate(models[-1].syn1neg)}
-            word2index = {model.index2word[ind]: ind for ind in range(recursive_graphs[level].number_of_nodes())}
+            prev_syn0 = {models[-1].wv.index2word[ind]: vec for ind, vec in enumerate(models[-1].wv.syn0)}
+            prev_syn1neg = {models[-1].wv.index2word[ind]: vec for ind, vec in enumerate(models[-1].syn1neg)}
+            word2index = {model.wv.index2word[ind]: ind for ind in range(recursive_graphs[level].number_of_nodes())}
             for ind in range(recursive_graphs[level].number_of_nodes()):
-                word = model.index2word[ind]
+                word = model.wv.index2word[ind]
                 if word in prev_syn0:
-                    model.syn0[ind] = prev_syn0[word]
+                    model.wv.syn0[ind] = prev_syn0[word]
                     model.syn1neg[ind] = prev_syn1neg[word]
                 else:
                     # if a is merged into b, then a should has identical weights in word2vec as b
                     if int(word) in recursive_merged_nodes[level]:
                         word_ind = word2index[word]
                         merged_word = str(recursive_merged_nodes[level][int(word)])
-                        model.syn0[word_ind] = prev_syn0[merged_word]
+                        model.wv.syn0[word_ind] = prev_syn0[merged_word]
                         model.syn1neg[word_ind] = prev_syn1neg[merged_word]
-            model.syn0_lockf = np.ones(len(model.vocab), dtype=np.float32)
+            model.syn0_lockf = np.ones(len(model.wv.vocab), dtype=np.float32)
 
-            model.train(edges)
+            model.train(edges, total_examples=model.corpus_count, epochs=model.iter)
 
         models.append(model)
 
