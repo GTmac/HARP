@@ -8,6 +8,7 @@ import numpy as np
 from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 from magicgraph import WeightedDiGraph, WeightedNode
 from scipy.io import mmread, mmwrite, loadmat, savemat
+from multiprocessing import cpu_count
 
 import graph_coarsening
 
@@ -35,7 +36,7 @@ def main():
                         help='Length of the random walk started at each node.')
     parser.add_argument('--window-size', default=10, type=int,
                         help='Window size of the Skip-gram model.')
-    parser.add_argument('--workers', default=1, type=int,
+    parser.add_argument('--workers', default=cpu_count(), type=int,
                         help='Number of parallel processes.')
     args = parser.parse_args()
 

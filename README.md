@@ -68,6 +68,9 @@ Note that ``node2vec`` uses the default parameters, which is p=1.0 and q=1.0.
 Path to the binary file of SFDP, which is the module we used for graph coarsening.
 You can set it to ``sfdp_linux``, ``sfdp_osx`` or ``sfdp_windows.exe`` depending on your operating system.
 
+**--workers** *procs_num=cpu_num*
+The number of parallel executors, equals to the number of logical CPUs by default.
+
 **More options:** The full list of command line options is available with ``python src/harp.py --help``.
 
 # Evaluation
