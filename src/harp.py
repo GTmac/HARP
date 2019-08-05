@@ -55,7 +55,8 @@ def main():
     print ('Underlying network embedding model: {}'.format(args.model))
 
     if args.model == 'deepwalk':
-        embeddings = graph_coarsening.skipgram_coarsening_disconnected(G,scale=-1,iter_count=1,
+        embeddings = graph_coarsening.skipgram_coarsening_disconnected(G,workers=args.workers,
+		scale=-1,iter_count=1,
                 sfdp_path=args.sfdp_path,
                 num_paths=args.number_walks,path_length=args.walk_length,
                 representation_size=args.representation_size,window_size=args.window_size,

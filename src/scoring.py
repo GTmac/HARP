@@ -17,7 +17,7 @@ from sklearn.utils import shuffle as skshuffle
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from collections import defaultdict
-from gensim.models import Word2Vec
+from gensim.models.word2vec  import Word2Vec
 
 class TopKRanker(OneVsRestClassifier):
     def predict(self, X, top_k_list):

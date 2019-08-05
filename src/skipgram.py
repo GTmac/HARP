@@ -23,13 +23,15 @@ from numpy import exp, log, dot, zeros, outer, random, dtype, float32 as REAL,\
     ndarray, empty, sum as np_sum, prod, ones, ascontiguousarray
 
 from gensim import utils, matutils  # utility fnc for pickling, common scipy operations etc
-from gensim.models import Word2Vec
+from gensim.models.word2vec import Word2Vec
 from gensim.models.word2vec import Vocab
 from six import iteritems, itervalues, string_types
 from six.moves import xrange
 from types import GeneratorType
+from multiprocessing import cpu_count
 import random
 
+_WORKERS = 1 + int(cpu_count() / 2)  # At least half of the available logical cores
 logger = logging.getLogger(__name__)
 
 try:
@@ -51,36 +53,45 @@ class Word2Vec_hs_loss(Word2Vec):
         kwargs["min_count"] = 0
         kwargs["negative"] = 0
         kwargs["sample"] = kwargs.get("sample", 1e-3)
-        kwargs["workers"] = kwargs.get("workers", 20)
-        super(self.__class__, self).__init__(sentences, **kwargs)
+        kwargs["workers"] = kwargs.get("workers", _WORKERS)
+        try:
+          super(self.__class__, self).__init__(sentences, **kwargs)
+        except TypeError as err:
+          stmp = sentences
+          logger.error('ERROR: {}, kwargs: {}, sentences ({}): {} ...'.format(err, kwargs, type(stmp),
+                        None if stmp is None else next(stmp)))
+          raise
 
     # add a word as the child of current word in the coarser graph
     def add_word(self, word, parent_word, emb, cur_index):
         fake_vocab_size = int(1e7)
-        word_index = len(self.vocab)
+        word_index = len(self.wv.vocab)
         inner_node_index = word_index - 1
-        parent_index = self.vocab[parent_word].index
+        parent_index = self.wv.vocab[parent_word].index
 
         # add in the left subtree
         if word != parent_word:
-            self.vocab[word] = Vocab(index=word_index, count=fake_vocab_size-word_index,sample_int=(2**32))
+            self.wv.vocab[word] = Vocab(index=word_index, count=fake_vocab_size-word_index,sample_int=(2**32))
             if emb is not None:
-                self.syn0[cur_index] = emb
+                self.wv.syn0[cur_index] = emb
             else:
-                self.syn0[cur_index] = self.syn0[parent_index]
+                self.wv.syn0[cur_index] = self.wv.syn0[parent_index]
             # the node in the coarsened graph serves as an inner node now
-            self.index2word.append(word)
-            self.vocab[word].code = array(list(self.vocab[parent_word].code) + [0], dtype=uint8)
-            self.vocab[word].point = array(list(self.vocab[parent_word].point) + [inner_node_index], dtype=uint32)
+            self.wv.index2word.append(word)
+            self.wv.vocab[word].code = array(list(self.wv.vocab[parent_word].code) + [0], dtype=uint8)
+            self.wv.vocab[word].point = array(list(self.wv.vocab[parent_word].point) + [inner_node_index], dtype=uint32)
             self.inner_node_index_map[parent_word] = inner_node_index
         else:
             if emb is not None:
-                self.syn0[parent_index] = emb
-            self.vocab[word].code = array(list(self.vocab[word].code) + [1], dtype=uint8)
-            self.vocab[word].point = array(list(self.vocab[word].point) + [self.inner_node_index_map[word]], dtype=uint32)
+                self.wv.syn0[parent_index] = emb
+            self.wv.vocab[word].code = array(list(self.wv.vocab[word].code) + [1], dtype=uint8)
+            self.wv.vocab[word].point = array(list(self.wv.vocab[word].point) + [self.inner_node_index_map[word]], dtype=uint32)
 
     def train(self, sentences, total_words=None, word_count=0,
-             total_examples=None, queue_factor=2, report_delay=0.1):
+             total_examples=None, queue_factor=2, report_delay=0.1, **kwargs):
+             #  sentences=sentences, corpus_file=corpus_file, total_examples=self.corpus_count,
+             #  total_words=self.corpus_total_words, epochs=self.epochs, start_alpha=self.alpha,
+             #  end_alpha=self.min_alpha, compute_loss=compute_loss
         """
         Update the model's neural weights from a sequence of sentences (can be a once-only generator stream).
         For Word2Vec, each sentence must be a list of unicode strings. (Subclasses may accept other examples.)
@@ -102,13 +113,13 @@ class Word2Vec_hs_loss(Word2Vec):
         logger.info(
             "training model with %i workers on %i vocabulary and %i features, "
             "using sg=%s hs=%s sample=%s negative=%s",
-            self.workers, len(self.vocab), self.layer1_size, self.sg,
+            self.workers, len(self.wv.vocab), self.layer1_size, self.sg,
             self.hs, self.sample, self.negative)
 
-        if not self.vocab:
+        if not self.wv.vocab:
             raise RuntimeError("you must first build vocabulary before training the model")
-        if not hasattr(self, 'syn0'):
-            raise RuntimeError("you must first finalize vocabulary before training the model")
+        #if not hasattr(self, 'wv.syn0'):
+        #    raise RuntimeError("you must first finalize vocabulary before training the model")
 
         if total_words is None and total_examples is None:
             if self.corpus_count:

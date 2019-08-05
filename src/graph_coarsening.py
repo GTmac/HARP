@@ -13,16 +13,20 @@ import tempfile
 import baseline
 import utils
 import numpy as np
+import six
 
 from collections import defaultdict, deque
 from concurrent.futures import ProcessPoolExecutor
 from deepwalk import walks as serialized_walks
-from gensim.models import Word2Vec
+from gensim.models.word2vec import Word2Vec
 from magicgraph import WeightedDiGraph, WeightedNode
 from scipy.io import mmread, mmwrite
+from multiprocessing import cpu_count
+
+_WORKERS = 1 + int(cpu_count() / 2)  # At least half of the available logical cores
 
 class DoubleWeightedDiGraph(WeightedDiGraph):
-    def __init__(self, init_graph = None):
+    def __init__(self, init_graph=None):
         super(WeightedDiGraph, self).__init__(node_class=WeightedNode)
         self.weighted_nodes = magicgraph.WeightedNode()
         if init_graph is not None:
@@ -246,7 +250,7 @@ def external_ec_coarsening(graph, sfdp_path, coarsening_scheme=2):
 
     return recursive_graphs, recursive_merged_nodes
 
-def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_merged_nodes=None, **kwargs):
+def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_merged_nodes=None, workers=_WORKERS, **kwargs):
     print (kwargs)
     if graph.is_connected():
         print ('Connected graph.')
@@ -276,6 +280,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
 
         if not subgraph.is_connected():
             gc_single_model = baseline.skipgram_baseline(subgraph,
+                                        workers=workers,
                                         scale=scale,
                                         num_paths=num_paths,
                                         path_length=path_length,
@@ -295,7 +300,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
                 recursive_graphs, recursive_merged_nodes = external_ec_coarsening(subgraph, sfdp_path)
             iter_counts = [iter_count for _ in range(len(recursive_graphs))]
             if hs == 1:
-                gc_model = skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes,
+                gc_model = skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, workers=workers,
                                         scale=scale,
                                         iter=iter_counts,
                                         num_paths=num_paths,
@@ -312,7 +317,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
                                         sample=sample)
             else:
                 print ('Training negative sampling model...')
-                gc_model = skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes,
+                gc_model = skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, workers=workers,
                                         scale=scale,
                                         iter=iter_counts,
                                         num_paths=num_paths,
@@ -342,7 +347,7 @@ def gen_alpha(init_alpha, recursive_graphs, iter_counts):
         alpha_list.append(init_alpha * 1. * cur_iter_count / total_iter_count)
     return alpha_list
 
-def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, **kwargs):
+def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, workers=_WORKERS, **kwargs):
     print (kwargs)
     print ('Start building Skip-gram + Hierarchical Softmax model on the coarsened graphs...')
     models = []
@@ -382,7 +387,7 @@ def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, **kwargs):
             path_length = kwargs.get('path_length', 10)
             num_paths = kwargs.get('num_paths', 40)
             output = kwargs.get('output', 'default')
-            edges = build_deepwalk_corpus(recursive_graphs[level], num_paths, path_length, output)
+            edges = build_deepwalk_corpus(recursive_graphs[level], num_paths, path_length, output, workers=workers)
 
         # the coarest level
         if level == levels - 1:
@@ -398,7 +403,7 @@ def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, **kwargs):
             model.syn0norm = None
             model.corpus_count = len(edges)
 
-            cur_merged_nodes = [(node, merged_node) for node, merged_node in recursive_merged_nodes[level].iteritems() if node != merged_node]
+            cur_merged_nodes = [(node, merged_node) for node, merged_node in six.iteritems(recursive_merged_nodes[level]) if node != merged_node]
             cur_merged_nodes = sorted(cur_merged_nodes, key=operator.itemgetter(1))
 
             changed_merged_nodes = []
@@ -436,7 +441,7 @@ def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, **kwargs):
     print ('Finish building Skip-gram model on the coarsened graphs.')
     return models
 
-def skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, **kwargs):
+def skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, workers=_WORKERS, **kwargs):
     # print (kwargs)
     print ('Start building Skip-gram + Negative Sampling model on the coarsened graphs...')
     models = []
@@ -467,7 +472,7 @@ def skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, **kwargs):
             path_length = kwargs.get('path_length', 10)
             num_paths = kwargs.get('num_paths', 40)
             output = kwargs.get('output', 'default')
-            edges = build_deepwalk_corpus(recursive_graphs[level], num_paths, path_length, output)
+            edges = build_deepwalk_corpus(recursive_graphs[level], num_paths, path_length, output, workers=workers)
         # use adjacency matrix
         elif scale == 1:
             edges, weights = recursive_graphs[level].get_edges()
@@ -475,9 +480,9 @@ def skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, **kwargs):
 
         # the coarest level
         if level == levels - 1:
-            model = Word2Vec(edges, size=kwargs['representation_size'], window=kwargs['window_size'], min_count=0, sample=sample, sg=1, hs=0, iter=kwargs['iter'][level], workers=20)
+            model = Word2Vec(edges, size=kwargs['representation_size'], window=kwargs['window_size'], min_count=0, sample=sample, sg=1, hs=0, iter=kwargs['iter'][level], workers=workers)
         else:
-            model = Word2Vec(None, size=kwargs['representation_size'], window=kwargs['window_size'], min_count=0, sample=sample, sg=1, hs=0, iter=kwargs['iter'][level], workers=20)
+            model = Word2Vec(None, size=kwargs['representation_size'], window=kwargs['window_size'], min_count=0, sample=sample, sg=1, hs=0, iter=kwargs['iter'][level], workers=workers)
             model.build_vocab(edges)
             #model.reset_weights()  # Does not present in the latest gensim and there is no sense to reset weight in the non-trained model
 
@@ -523,7 +528,7 @@ class combine_files_iter:
                 yield line.split()
         # return self
 
-    def next(self):
+    def __next__(self):
         try:
             result = next(self.fp_iter).split()
         except:
@@ -535,9 +540,9 @@ class combine_files_iter:
                 raise StopIteration
         return result
 
-def build_deepwalk_corpus(G, num_paths, path_length, output, alpha=0):
+def build_deepwalk_corpus(G, num_paths, path_length, output, alpha=0, workers=_WORKERS):
     walks_filebase = output + '.walks'
     walk_files = serialized_walks.write_walks_to_disk(G, walks_filebase, num_paths=num_paths,
                                          path_length=path_length, alpha=alpha, rand=random.Random(random.randint(0, 2**31)),
-                                         num_workers=20)
+                                         num_workers=workers)
     return combine_files_iter(walk_files, G.number_of_nodes() * num_paths, path_length)
