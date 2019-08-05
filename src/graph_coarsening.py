@@ -250,7 +250,7 @@ def external_ec_coarsening(graph, sfdp_path, coarsening_scheme=2):
 
     return recursive_graphs, recursive_merged_nodes
 
-def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_merged_nodes=None, workers=_WORKERS, **kwargs):
+def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_merged_nodes=None, workers=_WORKERS, output='tmpbuf', **kwargs):
     print (kwargs)
     if graph.is_connected():
         print ('Connected graph.')
@@ -280,7 +280,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
 
         if not subgraph.is_connected():
             gc_single_model = baseline.skipgram_baseline(subgraph,
-                                        workers=workers,
+                                        workers=workers, output=output,
                                         scale=scale,
                                         num_paths=num_paths,
                                         path_length=path_length,
@@ -300,7 +300,8 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
                 recursive_graphs, recursive_merged_nodes = external_ec_coarsening(subgraph, sfdp_path)
             iter_counts = [iter_count for _ in range(len(recursive_graphs))]
             if hs == 1:
-                gc_model = skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, workers=workers,
+                gc_model = skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes,
+                                        workers=workers, output=output,
                                         scale=scale,
                                         iter=iter_counts,
                                         num_paths=num_paths,
@@ -317,7 +318,8 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
                                         sample=sample)
             else:
                 print ('Training negative sampling model...')
-                gc_model = skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, workers=workers,
+                gc_model = skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes,
+                                        workers=workers, output=output,
                                         scale=scale,
                                         iter=iter_counts,
                                         num_paths=num_paths,
@@ -512,12 +514,15 @@ def skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, workers=_W
     return models
 
 class combine_files_iter:
+    ctr = dict()
+
     def __init__(self, file_list, length, path_length):
-        self.file_list = file_list
+        self.file_list = tuple(file_list)
         self.file_list_iter = iter(file_list)
         self.fp_iter = open(next(self.file_list_iter))
         self.length = length
         self.path_length = path_length
+        combine_files_iter.ctr[self.file_list] = 1 + combine_files_iter.ctr.get(self.file_list, 0)
 
     def __len__(self):
         return self.length
@@ -531,14 +536,22 @@ class combine_files_iter:
     def __next__(self):
         try:
             result = next(self.fp_iter).split()
-        except:
+        except StopIteration:
             try:
                 self.fp_iter.close()
                 self.fp_iter = open(next(self.file_list_iter))
                 result = next(self.fp_iter).split()
-            except:
-                raise StopIteration
+            except StopIteration:
+                raise
         return result
+
+    def __del__(self):
+        # Remove the processed files
+        combine_files_iter.ctr[self.file_list] -= 1
+        if not combine_files_iter.ctr[self.file_list]:
+            for fname in self.file_list:
+                os.remove(fname)
+
 
 def build_deepwalk_corpus(G, num_paths, path_length, output, alpha=0, workers=_WORKERS):
     walks_filebase = output + '.walks'
