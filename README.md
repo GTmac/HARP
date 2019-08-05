@@ -10,11 +10,18 @@ This code run with Python 2.
 
 The following Python packages are required to install HARP.
 
-[magicgraph](https://github.com/phanein/magic-graph) is a library for processing graph data.
+[Magicgraph](https://github.com/phanein/magic-graph) is a library for processing graph data.
 To install, run the following commands:
 
 	git clone https://github.com/phanein/magic-graph.git
 	cd magic-graph
+	python setup.py install
+
+[DeepWalk](https://github.com/eXascaleInfolab/deepwalk) is an embedding learning library for graphs.
+To install, run the following commands:
+
+	git clone https://github.com/eXascaleInfolab/deepwalk.git
+	cd deepwalk
 	python setup.py install
 
 Then, install HARP and the other requirements:
