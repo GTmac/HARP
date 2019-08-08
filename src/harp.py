@@ -80,7 +80,7 @@ def main():
                 representation_size=args.representation_size,window_size=1,
                 lr_scheme='default',alpha=0.025,min_alpha=0.001,sg=1,hs=0,sample=0.001)
 
-    if args.output.endswith('.mat'):
+    if args.output.lower().endswith('.mat'):
         savemat(args.output, mdict={'embs': embeddings})
     else:
         np.save(args.output, embeddings)
