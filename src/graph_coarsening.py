@@ -1,3 +1,4 @@
+from __future__ import print_function
 import copy
 import glob
 import logging
@@ -220,7 +221,7 @@ def external_ec_coarsening(graph, sfdp_path, coarsening_scheme=2):
     input_fname = os.path.join(temp_dir, temp_fname)
     mmwrite(open(os.path.join(input_fname), 'wb'), magicgraph.to_adjacency_matrix(graph))
     sfdp_abs_path = os.path.abspath(sfdp_path)
-    subprocess.call('%s -g%d -v -u -Tc %s 2>x' % (sfdp_abs_path, coarsening_scheme, input_fname), shell=True, cwd=temp_dir)
+    subprocess.call('{:s} -g{:d} -v -u -Tc {:s} 2>x'.format(sfdp_abs_path, coarsening_scheme, input_fname), shell=True, cwd=temp_dir)
     recursive_graphs, recursive_merged_nodes = [], read_coarsening_info(temp_dir)
     subprocess.call(['rm', '-r', temp_dir])
     cur_graph = graph
@@ -233,15 +234,15 @@ def external_ec_coarsening(graph, sfdp_path, coarsening_scheme=2):
 
     for level in range(levels):
         if iter_round == 1:
-            print ('Original graph with %d nodes and %d edges' % \
-            (cur_graph.number_of_nodes(), cur_graph.number_of_edges() ) )
+            print ('Original graph with {:d} nodes and {:d} edges'.format(
+            cur_graph.number_of_nodes(), cur_graph.number_of_edges() ) )
             recursive_graphs.append(DoubleWeightedDiGraph(cur_graph))
 
         coarsened_graph = external_collapsing(cur_graph, recursive_merged_nodes[level])
         cur_node_count = coarsened_graph.number_of_nodes()
-        print ('Coarsening Round %d:' % iter_round)
-        print ('Generate coarsened graph with %d nodes and %d edges' % \
-        (coarsened_graph.number_of_nodes(), coarsened_graph.number_of_edges()) )
+        print ('Coarsening Round {:d}:'.format(iter_round))
+        print ('Generate coarsened graph with {:d} nodes and {:d} edges'.format(
+        coarsened_graph.number_of_nodes(), coarsened_graph.number_of_edges()) )
 
         recursive_graphs.append(coarsened_graph)
         cur_graph = coarsened_graph
@@ -276,7 +277,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
 
     for subgraph, reversed_mapping in zip(subgraphs, reversed_mappings):
         count += 1
-        print ('Subgraph %d with %d nodes and %d edges' % (count, subgraph.number_of_nodes(), subgraph.number_of_edges()))
+        print ('Subgraph {:d} with {:d} nodes and {:d} edges'.format(count, subgraph.number_of_nodes(), subgraph.number_of_edges()))
 
         if not subgraph.is_connected():
             gc_single_model = baseline.skipgram_baseline(subgraph,
@@ -381,7 +382,7 @@ def skipgram_coarsening_hs(recursive_graphs, recursive_merged_nodes, workers=_WO
         walks = kwargs['walks']
 
     for level in range(levels - 1, -1, -1):
-        print ('Training on graph level %d...' % level)
+        print ('Training on graph level {:d}...'.format(level))
         if scale == 1:
             edges, weights = recursive_graphs[level].get_edges()
             random.shuffle(edges)
@@ -468,7 +469,7 @@ def skipgram_coarsening_neg(recursive_graphs, recursive_merged_nodes, workers=_W
     sample = kwargs.get('sample', 1e-3)
 
     for level in range(levels - 1, -1, -1):
-        print ('Training on graph level %d...' % level)
+        print ('Training on graph level {:d}...'.format(level))
         # DeepWalk
         if scale == -1:
             path_length = kwargs.get('path_length', 10)

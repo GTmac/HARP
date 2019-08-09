@@ -36,8 +36,8 @@ def main():
                         help='Length of the random walk started at each node.')
     parser.add_argument('--window-size', default=10, type=int,
                         help='Window size of the Skip-gram model.')
-    parser.add_argument('--workers', default=cpu_count(), type=int,
-                        help='Number of parallel processes.')
+    parser.add_argument('--workers', default=1, type=int,
+                        help='Number of parallel processes, -1 to consume all available logical CPUs (harware threads).')
     args = parser.parse_args()
 
     # Process args
@@ -48,8 +48,13 @@ def main():
     elif args.format == 'edgelist':
         G = magicgraph.load_edgelist(args.input, undirected=True)
     else:
-        raise Exception("Unknown file format: '%s'. Valid formats: 'mat', 'adjlist', and 'edgelist'."
-                % args.format)
+        raise ValueError("Unknown file format: '{}'. Valid formats: 'mat', 'adjlist', and 'edgelist'.".format(args.format))
+    if args.workers < 0 or args.workers > cpu_count():
+        if args.workers == -1:
+            args.workers = cpu_count()
+        else:
+            raise ValueError("Invalid number of workers: {} / {} CPUs".format(args.workers, cpu_count()))
+
     G = graph_coarsening.DoubleWeightedDiGraph(G)
     print ('Number of nodes: {}'.format(G.number_of_nodes()))
     print ('Number of edges: {}'.format(G.number_of_edges()))

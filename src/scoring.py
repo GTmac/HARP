@@ -60,7 +60,7 @@ def scoring(embeddings, graph_file, training_percents, network_name="network", l
     all_results = defaultdict(list)
 
     for train_percent in training_percents:
-        print ('Training Percent: %.2f' % train_percent)
+        print ('Training Percent: {:.1%}'.format(train_percentq))
         for shuf in shuffles:
 
             X, y = shuf
@@ -121,4 +121,4 @@ if __name__ == '__main__':
     all_results, micro_f1, macro_f1 = scoring(args.embeddings, args.input, args.training_percents,
             network_name=args.adj_matrix_name, labels_name=args.label_name)
     for item in sorted(macro_f1):
-        print ('Training ratio is %.1f%%, macro F1 is %.2f%%' % (item * 100, macro_f1[item] * 100))
+        print ('Training ratio is {:.1%}, macro F1 is {:.2%}'.format(item, macro_f1[item]))
