@@ -1,4 +1,4 @@
-from gensim.models.word2vec  import Word2Vec
+from gensim.models.word2vec import Word2Vec
 from multiprocessing import cpu_count
 import graph_coarsening
 import numpy as np
