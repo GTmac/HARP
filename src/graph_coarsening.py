@@ -331,6 +331,7 @@ def skipgram_coarsening_disconnected(graph, recursive_graphs=None, recursive_mer
         for ind, vec in enumerate(gc_model[-1].syn0):
             real_ind = reversed_mapping[int(gc_model[-1].index2word[ind])]
             embeddings[real_ind] = vec
+        recursive_graphs = None
     return embeddings
 
 def gen_alpha(init_alpha, recursive_graphs, iter_counts):
